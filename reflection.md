@@ -4,7 +4,7 @@
 
 LocalBuka AI Food Assistant is a restaurant recommendation system designed to help users discover restaurants in Lagos based on their preferences.
 
-The project combines a rule-based recommendation engine with a Large Language Model (LLM) to produce personalised recommendations. Rather than relying on the LLM to determine which restaurants to recommend, the system first retrieves and ranks restaurants from a structured dataset before using the LLM to explain those recommendations in natural language.
+The project combines a rule-based recommendation engine with a Large Language Model (LLM) to produce personalized recommendations. Rather than relying on the LLM to determine which restaurants to recommend, the system first retrieves and ranks restaurants from a structured dataset before using the LLM to explain those recommendations in natural language.
 
 My objective was not simply to connect an API to a chatbot. I wanted to build a system that balanced determinism and flexibility while exploring how traditional software engineering techniques can work alongside modern AI systems.
 
@@ -24,12 +24,12 @@ A user looking for a restaurant often has multiple constraints:
 
 A language model alone can generate restaurant suggestions, but there is no guarantee those recommendations will exist in the available dataset.
 
-I therefore approached the problem as two separate tasks:
+Because of this, I approached the problem as two separate tasks:
 
 1. Finding the best restaurant matches.
 2. Explaining those matches conversationally.
 
-Separating retrieval from generation became the foundation of the system architecture.
+Separating retrieval from generation became the foundation of the system architecture. The recommendation engine retrieves and ranks restaurants while the language model explains those recommendations.
 
 ---
 
@@ -59,8 +59,6 @@ GPT-4.1 Mini (OpenRouter)
 Natural Language Recommendation
 ```
 
-The recommendation engine retrieves and ranks restaurants while the language model explains those recommendations. Separating retrieval from generation became one of the most important design decisions in the project.
-
 ---
 
 ## Architectural Approach
@@ -69,7 +67,7 @@ LocalBuka uses a hybrid architecture that combines rule-based retrieval with LLM
 
 The recommendation engine itself is not a machine learning model. Restaurant ranking is performed using deterministic business rules and a weighted scoring system based on cuisine preferences, location, price range, dietary requirements, spice preferences, and restaurant ratings.
 
-The LLM is responsible only for transforming retrieved recommendations into natural-language responses.
+The LLM is only responsible for transforming retrieved recommendations into natural-language responses.
 
 I deliberately separated retrieval from generation because language models are not reliable databases. Allowing the model to determine recommendations directly would increase the risk of hallucinated restaurants, inconsistent results, and ignored user constraints.
 
@@ -81,7 +79,7 @@ This design follows the same general principle used in Retrieval-Augmented Gener
 
 ## Engineering Decisions and Tradeoffs
 
-The most interesting part of the project was not the implementation itself but the decisions made during development.
+I think the most interesting part of the project wasn't the implementation itself but the decisions made during development. Decisions like:
 
 ### Why Not Let the LLM Recommend Restaurants Directly?
 
@@ -97,15 +95,13 @@ The model could:
 
 For a recommendation system, correctness was more important than creativity.
 
-I therefore chose a rule-based recommendation engine for retrieval and ranking while reserving the language model for explanation.
+This was why I chose the rule-based recommendation engine for retrieval and ranking and reserved the language model for explanation.
 
 This decision improved transparency and made debugging significantly easier.
 
 ---
 
 ### Why Use Weighted Scoring?
-
-I considered several approaches to ranking restaurants.
 
 For a dataset of this size, introducing machine learning would have added complexity without providing meaningful benefits.
 
@@ -118,15 +114,13 @@ A weighted scoring system offered several advantages:
 
 The tradeoff is that the system relies on manually chosen weights.
 
-While less sophisticated than a learned ranking model, it was appropriate for the project's scope.
+While this is not as sophisticated than a learned ranking model, it was appropriate for the project's scope.
 
 ---
 
 ### Why JSON Instead of a Database?
 
-I considered storing restaurant information in a database.
-
-However, the dataset was small, static, and used only for experimentation.
+I breifly thought about a database for storing restaurant information, but the dataset was small, static, and is only used for experimentation.
 
 Using JSON reduced development overhead and allowed me to focus on recommendation logic rather than database administration.
 
@@ -136,7 +130,7 @@ If the system needed to support:
 - User-generated content
 - Thousands of restaurants
 
-I would migrate the data layer to PostgreSQL.
+I would then have migrated the data layer to PostgreSQL.
 
 ---
 
@@ -146,9 +140,7 @@ This became the most important architectural decision in the project.
 
 Allowing the language model to generate recommendations freely would have increased flexibility but also increased hallucination risk.
 
-Retrieving restaurants first reduced flexibility but significantly improved reliability.
-
-Given the purpose of the application, reliability was the more valuable property.
+Retrieving restaurants first reduced flexibility but significantly improved reliability. And given the purpose of the application, reliability was the more valuable property.
 
 This tradeoff mirrors the same reasoning behind Retrieval-Augmented Generation (RAG) systems used in production AI applications.
 
@@ -158,41 +150,37 @@ This tradeoff mirrors the same reasoning behind Retrieval-Augmented Generation (
 
 ### OpenRouter Rate Limits
 
-While integrating OpenRouter, several free models repeatedly returned HTTP 429 errors.
+While integrating OpenRouter, the plan was to use free models I find available on my dashboard, but several of them repeatedly returned HTTP 429 errors.
 
-This interrupted development and made testing unreliable.
+This interrupted development and made testing unreliable. So rather than continuing to fight rate limits, I switched to GPT-4.1 Mini and used paid credits for development.
 
-Rather than continuing to fight rate limits, I switched to GPT-4.1 Mini and used paid credits for development.
+What this highlighted for me was a practical lesson:
 
-This highlighted a practical lesson:
-
-Building AI applications often involves dealing with infrastructure constraints rather than model logic alone.
+Building AI applications often involves dealing with infrastructure constraints like model availability, rather than model logic alone.
 
 ---
 
 ### SSL/TLS Errors
 
-The most significant debugging challenge involved API calls to OpenRouter.
+The most significant debugging challenge involved API calls to OpenRouter. Affter switching to GPT-4.1 Mini I kept facing SSL/TLS errors.
 
-A standalone test script successfully generated responses from GPT-4.1 Mini, but the same API call consistently failed inside the application with:
+To check that the model wasn't the issue, a standalone test script successfully generated responses from GPT-4.1 Mini, but the same API call consistently failed inside the application with an error that read:
 
 SSLV3_ALERT_BAD_RECORD_MAC
 
-Because the API worked in isolation, I knew the issue was not the OpenRouter service itself. I isolated components, created smaller test scripts, compared successful and failed execution paths, and added logging around requests.
+Because the API worked in isolation, I knew for sure that the issue was not the OpenRouter service itself. So created a smaller test script, compared successful and failed execution paths, and added logging around requests.
 
-This allowed me to narrow the problem scope and eliminate the model, API provider, and network configuration as likely causes.
+This allowed me to narrow the problem scope and fully eliminate the model, API provider, and network configuration as likely causes.
 
 Eventually, I discovered stale Python cache files were contributing to inconsistent behaviour. Removing the project's **pycache** directories resolved the issue.
 
-This experience reinforced the importance of isolating components and validating assumptions during debugging.
+This experience reinforced why isolating components and validating assumptions are important strategies during debugging.
 
 ---
 
 ### Prompt Grounding
 
-Early versions of the assistant relied too heavily on the language model.
-
-Although responses sounded natural, they were not always grounded in retrieved data.
+Early versions of the assistant relied too heavily on the language model. Although the responses sounded natural, they were not always grounded in retrieved data.
 
 To improve reliability, I introduced:
 
@@ -206,19 +194,19 @@ This significantly reduced the risk of hallucinated recommendations.
 
 ### Recommendation Filter
 
-During testing, I discovered that my recommendation filter unintentionally excluded restaurants that matched dietary or price preferences when no cuisine preference was specified. The filtering logic relied too heavily on the overall score and implicitly favoured cuisine matches. I refactored the system so that eligibility and ranking became separate concerns: restaurants are included whenever they satisfy at least one user preference, while scores are used only for ranking. This improved recall without affecting recommendation quality.
+During testing, I discovered that my recommendation filter unintentionally excluded restaurants that matched dietary or price preferences when no cuisine preference was specified. The filtering logic relied too heavily on the overall score and implicitly favoured cuisine matches. I refactored the system so that eligibility and ranking became separate concerns. So now restaurants are included whenever they satisfy at least one user preference, while scores are used only for ranking. This improved recall without affecting recommendation quality.
 
 ---
 
 ## Risks and Guardrails
 
-Although LocalBuka is a relatively small project, deploying a recommendation assistant in production introduces several risks.
+Although LocalBuka Food Assistant is a relatively small project, deploying a recommendation assistant in production introduces several risks.
 
 ### Hallucinated Recommendations
 
 The most significant risk is the language model recommending restaurants that do not exist in the dataset or providing inaccurate information about restaurants.
 
-To mitigate this risk, I adopted a retrieval-first architecture. Restaurants are retrieved from the dataset before being passed to the language model, and the model is explicitly instructed to use only the supplied restaurant context.
+This was mitigated with the adoption a retrieval-first architecture. Restaurants are retrieved from the dataset first before being passed to the language model, and the model is explicitly instructed to use only the supplied restaurant context.
 
 ### Outdated Information
 
@@ -230,7 +218,7 @@ In a production system, restaurant data should be regularly refreshed from trust
 
 Large language models can occasionally generate responses that are irrelevant, misleading, or inappropriate.
 
-To reduce this risk, I would implement moderation checks, stricter system prompts, output validation, and monitoring of user interactions to identify problematic responses.
+To reduce this risk, I would implement moderation checks, stricter system prompts, output validation, and monitoring of user interactions to identify problematic responses. For example, I would log user queries and assistant responses, then periodically review samples for hallucinated recommendations, irrelevant answers, or inappropriate content. I would also provide a simple feedback mechanism (such as thumbs up/down) so users can report poor responses. These signals could be used to identify recurring issues and improve prompts, guardrails, or recommendation logic over time.
 
 ### Poor Recommendation Quality
 
@@ -248,7 +236,7 @@ During development I used GPT-4.1 Mini through OpenRouter because it provided re
 
 If the application were deployed at scale, API cost management would become an important consideration.
 
-Several approaches could help control costs:
+Approaches like the following could help control costs:
 
 - Use smaller and cheaper models for routine requests.
 - Limit the amount of retrieved context sent to the model.
@@ -283,7 +271,7 @@ For example, if users frequently searched for healthy restaurants in Lekki but r
 
 Over time, these signals could be used to refine recommendation weights or transition to a machine-learning-based ranking model trained on real user interactions.
 
-This reinforced an important lesson: a recommendation system should not only generate recommendations but also provide mechanisms for measuring whether those recommendations create value for users.
+This reminded me of an important lesson: a recommendation system should not only generate recommendations but also provide mechanisms for measuring whether those recommendations create value for users.
 
 ---
 
@@ -304,7 +292,7 @@ Future improvements would include:
 - Embedding-based search
 - Vector database retrieval
 - User preference memory
-- Personalised recommendations
+- Personalized recommendations
 - Restaurant reviews and sentiment analysis
 - Automated evaluation metrics
 - Docker deployment
@@ -316,23 +304,21 @@ These additions would move the application closer to a production-grade recommen
 
 ## Scaling Considerations
 
-The current architecture is intentionally simple and appropriate for a small dataset and limited traffic.
+The current architecture is intentionally simple and appropriate for a small dataset and limited traffic. If LocalBuka needed to support millions of users and a significantly larger restaurant catalogue, several architectural changes would be necessary.
 
-If LocalBuka needed to support millions of users and a significantly larger restaurant catalogue, several architectural changes would be necessary.
-
-The restaurant dataset would move from JSON files to a relational database such as PostgreSQL to support efficient querying, updates, and indexing.
+The restaurant dataset would move from JSON files to a relational database like PostgreSQL to support efficient querying, updates, and indexing.
 
 Recommendation requests would be served through dedicated API services behind a load balancer to support higher traffic volumes.
 
 Frequently requested recommendations could be cached to reduce latency and lower infrastructure costs.
 
-The recommendation engine itself would likely evolve beyond manually defined rules. Rather than relying solely on weighted scoring, I would incorporate user interaction data such as clicks, views, favourites, and completed orders to build personalised ranking models.
+The recommendation engine itself would likely evolve beyond manually defined rules. Rather than relying solely on weighted scoring, I would incorporate user interaction data such as clicks, views, favourites, and completed orders to build personalized ranking models.
 
 Restaurant retrieval could also move toward embedding-based semantic search and vector database retrieval to support more complex natural-language queries.
 
 User preferences would be stored persistently, allowing recommendations to adapt based on historical behaviour rather than a single request.
 
-While the current implementation prioritises simplicity, transparency, and ease of debugging, a production-scale version would place greater emphasis on scalability, observability, personalisation, and operational reliability.
+While the current implementation prioritizes simplicity, transparency, and ease of debugging, a production-scale version would place greater emphasis on scalability, observability, personalization, and operational reliability.
 
 ---
 
@@ -347,8 +333,8 @@ The strongest results came from combining:
 - Retrieval mechanisms
 - Language generation
 
-LocalBuka demonstrated how traditional software engineering and AI engineering complement each other.
+This project demonstrates how traditional software engineering and AI engineering complement each other.
 
-More importantly, it changed how I think about building AI applications. Rather than asking, "What can the model do?" I began asking, "What responsibilities should belong to the model, and what responsibilities should belong to the system around it?"
+More importantly, it changed my thinking about building AI applications. Rather than asking, "What can the model do?" I began asking, "What responsibilities should belong to the model, and what responsibilities should belong to the system around it?"
 
 That shift in thinking was the most important outcome of the project.
