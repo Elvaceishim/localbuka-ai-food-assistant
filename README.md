@@ -1,22 +1,20 @@
 # LocalBuka AI Food Assistant
 
-An AI-powered restaurant recommendation assistant for Lagos.
+LocalBuka is an AI-powered restaurant recommendation assistant for people in Lagos.
 
-LocalBuka combines a rule-based recommendation engine with an LLM-powered conversational assistant. The system retrieves restaurants from a structured dataset, ranks them according to user preferences, and generates natural-language recommendations grounded entirely in retrieved restaurant data.
+This project shows how LocalBuka combines a rule-based recommendation engine with an LLM-powered conversational assistant. The system retrieves restaurants from a structured dataset, ranks them according to user preferences, and generates natural-language recommendations grounded entirely in retrieved restaurant data.
 
 ---
 
 ## Problem Statement
 
-Finding a restaurant that matches personal preferences can be difficult.
-
-Users often care about factors such as:
+Finding a restaurant that matches personal preferences can be difficult. Users often care about factors such as:
 
 - Cuisine type
 - Budget
 - Location
 - Dietary restrictions
-- Spice preferences
+- Spice preferences (because Lagos, Nigeria)
 
 LocalBuka helps users discover restaurants that best match these requirements while providing human-friendly explanations for each recommendation.
 
@@ -44,7 +42,7 @@ The conversational assistant:
 - Understands natural-language queries
 - Extracts user preferences
 - Retrieves relevant restaurants
-- Uses GPT through OpenRouter
+- Uses GPT via OpenRouter
 - Generates grounded responses based only on retrieved restaurants
 
 ### FastAPI Backend
@@ -105,12 +103,10 @@ localbuka-food-assistant/
 │       └── restaurants.json
 │
 ├── tests/
-│   └── sample_users.py
+│   └── sample_outputs.md
 │
 ├── README.md
-├── PROJECT_PLAN.md
 ├── reflection.md
-├── sample_outputs.md
 └── requirements.txt
 ```
 
@@ -118,9 +114,7 @@ localbuka-food-assistant/
 
 ## Dataset
 
-The project uses a curated dataset of Lagos restaurants.
-
-Each restaurant contains:
+The project uses a curated dataset of Lagos restaurants. Each restaurant data is structured like this:
 
 ```json
 {
@@ -297,42 +291,72 @@ Response:
 
 ## Running the Project
 
-### Clone Repository
+### 1. Clone the Repository
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/your-username/localbuka-food-assistant.git
 cd localbuka-food-assistant
 ```
 
-### Install Dependencies
+### 2. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Create Environment Variables
+### 3. Configure Environment Variables
 
-Create a `.env` file:
+Create a `.env` file in the project root:
 
 ```env
-OPENROUTER_API_KEY=your_api_key_here
+OPENROUTER_API_KEY=your_openrouter_api_key
 ```
 
-### Start the API
+You can obtain an API key from OpenRouter.
+
+### 4. Start the API Server
 
 ```bash
 uvicorn app.api.main:app --reload
 ```
 
-### Open Swagger Docs
+The server will start on:
+
+```text
+http://127.0.0.1:8000
+```
+
+### 5. Open the API Documentation
+
+Visit:
 
 ```text
 http://127.0.0.1:8000/docs
 ```
 
+Swagger UI can be used to test both:
+
+- `POST /recommendations`
+- `POST /chat`
+
+### 6. Run the Terminal Assistant
+
+```bash
+python -m app.assistant.assistant
+```
+
+Example:
+
+```text
+You: Recommend a healthy restaurant in Lekki
+
+Assistant:
+Green Bowl is a strong option in Lekki, offering healthy dishes such as Quinoa Salad and Green Smoothie...
+```
+
 ---
 
-## Demo
+## Conversation Demo
 
 ### Swagger API
 
@@ -347,29 +371,6 @@ http://127.0.0.1:8000/docs
 ![Chat Example - Italian food follow-up](images/terminal-chat-1.png)
 
 ![Chat Example - healthy restaurant in Lekki](images/terminal-chat-2.png)
-
----
-
-## Example Conversation
-
-### User
-
-```text
-Recommend a healthy restaurant in Lekki
-```
-
-### Assistant
-
-```text
-Green Bowl is a strong match because it serves healthy cuisine,
-is located in Lekki, and has a high rating of 4.8.
-
-Popular dishes include:
-- Quinoa Salad
-- Green Smoothie
-
-You may also consider Fresh Roots and Fit Kitchen.
-```
 
 ---
 
@@ -394,53 +395,6 @@ You may also consider Fresh Roots and Fit Kitchen.
 - Uvicorn
 - Requests
 - Python Dotenv
-
----
-
-## Challenges Encountered
-
-### OpenRouter Rate Limits
-
-Free OpenRouter models frequently returned 429 errors. The solution was to switch to a paid model and implement retry logic.
-
-### SSL/TLS Connection Errors
-
-While integrating OpenRouter, intermittent SSL errors occurred. The issue was traced to cached Python artifacts and resolved by clearing **pycache** directories and rebuilding the environment.
-
-### Grounding LLM Responses
-
-Early versions allowed the model to recommend restaurants that did not exist in the dataset.
-
-The solution was to implement a retrieval-first workflow where only retrieved restaurant information is passed to the model.
-
-## Future Improvements
-
-Planned enhancements include:
-
-- Unit and integration tests
-- Docker support
-- Vector search
-- Semantic restaurant retrieval
-- User preference memory
-- Personalized ranking
-- Restaurant review analysis
-- Hybrid retrieval (rules + embeddings)
-
----
-
-## Reflection
-
-This project demonstrates several AI engineering concepts:
-
-- Retrieval-first system design
-- Recommendation systems
-- Prompt grounding
-- LLM integration
-- API development
-- Structured context generation
-- Hallucination reduction through retrieval
-
-A key lesson from the project was that LLMs perform significantly better when grounded with retrieved context instead of relying solely on prompts.
 
 ---
 
